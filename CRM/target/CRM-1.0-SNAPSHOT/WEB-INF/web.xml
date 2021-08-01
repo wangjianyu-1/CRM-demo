@@ -25,6 +25,10 @@
     <url-pattern>*.jsp</url-pattern>
   </filter-mapping>
 
+  <!--监听器-->
+  <listener>
+    <listener-class>com.bjpowernode.crm.web.Listener.SysInitListener</listener-class>
+  </listener>
 
   <!--用户控制器-->
   <servlet>

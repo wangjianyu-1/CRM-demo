@@ -5,7 +5,9 @@
 
 <mapper namespace="com.bjpowernode.crm.settings.dao.DicValueDao">
 	
-
+    <select id="getAllDicValue" resultType="DicValue">
+        select * from tbl_dic_value where typeCode=#{code}
+    </select>
 	
 </mapper>
 

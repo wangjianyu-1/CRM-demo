@@ -1,4 +1,5 @@
 <%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="utf-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 
 <%
 String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.getServerPort()+request.getContextPath()+"/";
@@ -17,13 +18,192 @@ String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.
 <script type="text/javascript" src="jquery/bootstrap-datetimepicker-master/js/bootstrap-datetimepicker.js"></script>
 <script type="text/javascript" src="jquery/bootstrap-datetimepicker-master/locale/bootstrap-datetimepicker.zh-CN.js"></script>
 
+	<script type="text/javascript" src="jquery/bs_pagination/jquery.bs_pagination.min.js"></script>
+	<script type="text/javascript" src="jquery/bs_pagination/en.js"></script>
 <script type="text/javascript">
 
 	$(function(){
-		
-		
-		
+
+		//日历控件
+		$(".time").datetimepicker({
+			minView: "month",
+			language:  'zh-CN',
+			format: 'yyyy-mm-dd',
+			autoclose: true,
+			todayBtn: true,
+			pickerPosition: "top-left"
+		});
+
+		//为保存按钮绑定事件
+		$("#saveBtn").click(function () {
+
+			$.ajax({
+				url:"workbench/clue/save.do",
+				data:{
+
+					"fullname":$.trim($("#create-fullname").val()),
+					"appellation":$.trim($("#create-appellation").val()),
+					"owner":$.trim($("#create-owner").val()),
+					"company":$.trim($("#create-company").val()),
+					"job":$.trim($("#create-job").val()),
+					"email":$.trim($("#create-email").val()),
+					"phone":$.trim($("#create-phone").val()),
+					"website":$.trim($("#create-website").val()),
+					"mphone":$.trim($("#create-mphone").val()),
+					"state":$.trim($("#create-state").val()),
+					"source":$.trim($("#create-source").val()),
+					"description":$.trim($("#create-description").val()),
+					"contactSummary":$.trim($("#create-contactSummary").val()),
+					"nextContactTime":$.trim($("#create-nextContactTime").val()),
+					"address":$.trim($("#create-address").val())
+
+				},
+				type:"post",
+				dataType:"json",
+				success:function (data) {
+					//data : {"success":boolean}
+					if(data.success){
+						//刷新列表
+						alert("添加线索成功")
+						$("#createClueModal").modal("hide");
+						pageList(1,2);
+
+					}else{
+						alert("添加线索失败")
+					}
+
+				}
+			})
+
+
+		})
+
+		//为创建按钮绑定事件
+		$("#addBtn").click(function () {
+
+			//处理owner下拉框数据
+			$.ajax({
+				url:"workbench/clue/getUserList.do",
+				data:{},
+				type:"get",
+				dataType:"json",
+				success:function (data) {
+					//data [{},{},{}]
+					var html =""
+
+					$.each(data,function (i,n) {
+
+						html+="<option value='"+n.id+"'>"+n.name+"</option>"
+					})
+
+					$("#create-owner").html(html);
+
+					var id = "${sessionScope.user.id}";
+					$("#create-owner").val(id)
+
+					$("#createClueModal").modal("show");
+				}
+			})
+
+		});
+
+		//为查询按钮绑定事件
+		$("#searchBtn").click(function () {
+			pageList(1,2)
+		});
+
+		/*
+        动态生成的元素，我们不能以普通的绑定事件形式来进行操作
+            只能用on方式的形式来触发事件
+
+            $(需要绑定元素的有效的外层元素).on(绑定事件的方式，需要绑定的元素的jquery对象，回调函数)
+    */
+
+		//为全选按钮绑定事件
+		$("#qx").click(function () {
+			$("input[name=xz]").prop("checked",this.checked);
+		})
+
+		$("#clueBody").on("click",$("input[name=xz]"), function () {
+			if($("input[name=xz]").length == $("input[name=xz]:checked").length){
+
+				$("#qx").prop("checked",true)
+			}else {
+				$("#qx").prop("checked",false)
+			}
+
+		})
+
+		pageList(1,2);
 	});
+
+	function pageList(pageNo,pageSize) {
+
+		$("#qx").click(function () {
+			$("input[name=xz]").prop("checked",false);
+		})
+
+		$.ajax({
+			url:"workbench/clue/pageList.do",
+			data:{
+				"pageNo":pageNo,
+				"pageSize":pageSize,
+				"company":$.trim($("#search-company").val()),
+				"fullname":$.trim($("#search-fullname").val()),
+				"phone":$.trim($("#search-phone").val()),
+				"mphone":$.trim($("#search-mphone").val()),
+				"source":$.trim($("#search-source").val()),
+				"state":$.trim($("#search-state").val()),
+				"owner":$.trim($("#search-owner").val())
+			},
+			type:"get",
+			dataType:"json",
+			success:function (data) {
+				//data:  "dataList":[{clue1},{clue2},{clue3}...]
+
+				var html =""
+				$.each(data,function (i,n) {
+					html += '<tr class="active">';
+					html += '<td><input type="checkbox" id="xz"/></td>';
+					html += '<td><a style="text-decoration: none; cursor: pointer;" onclick="window.location.href=\'workbench/clue/detail.do?id='+n.id+'\'">'+n.fullname+n.appellation+'</a></td>';
+					html += '<td>'+n.company+'</td>';
+					html += '<td>'+n.phone+'</td>';
+					html += '<td>'+n.mphone+'</td>';
+					html += '<td>'+n.source+'</td>';
+					html += '<td>'+n.owner+'</td>';
+					html += '<td>'+n.state+'</td>';
+					html += '</tr>';
+
+
+				})
+
+				$("#clueBody").html(html);
+
+				//计算总页数totalPages
+				var totalPages = data.total%pageSize==0?data.total/pageSize:parseInt(data.total/pageSize)+1
+
+				//数据处理完之后，结合分页查询，对前端展示分页信息
+				$("#activityPage").bs_pagination({
+					currentPage: pageNo, // 页码
+					rowsPerPage: pageSize, // 每页显示的记录条数
+					maxRowsPerPage: 20, // 每页最多显示的记录条数
+					totalPages: totalPages, // 总页数
+					totalRows: data.total, // 总记录条数
+
+					visiblePageLinks: 3, // 显示几个卡片
+
+					showGoToPage: true,
+					showRowsPerPage: true,
+					showRowsInfo: true,
+					showRowsDefaultInfo: true,
+
+					onChangePage : function(event, data){
+						pageList(data.currentPage , data.rowsPerPage);
+					}
+				})
+			}
+		})
+	}
 	
 </script>
 </head>
@@ -45,10 +225,8 @@ String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.
 						<div class="form-group">
 							<label for="create-clueOwner" class="col-sm-2 control-label">所有者<span style="font-size: 15px; color: red;">*</span></label>
 							<div class="col-sm-10" style="width: 300px;">
-								<select class="form-control" id="create-clueOwner">
-								  <option>zhangsan</option>
-								  <option>lisi</option>
-								  <option>wangwu</option>
+								<select class="form-control" id="create-owner">
+
 								</select>
 							</div>
 							<label for="create-company" class="col-sm-2 control-label">公司<span style="font-size: 15px; color: red;">*</span></label>
@@ -60,18 +238,16 @@ String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.
 						<div class="form-group">
 							<label for="create-call" class="col-sm-2 control-label">称呼</label>
 							<div class="col-sm-10" style="width: 300px;">
-								<select class="form-control" id="create-call">
-								  <option></option>
-								  <option>先生</option>
-								  <option>夫人</option>
-								  <option>女士</option>
-								  <option>博士</option>
-								  <option>教授</option>
+								<select class="form-control" id="create-appellation">
+									<option></option>
+								  <c:forEach items="${applicationScope.appellation}" var="a">
+										<option value="${a.value}">${a.text}</option>
+								  </c:forEach>
 								</select>
 							</div>
 							<label for="create-surname" class="col-sm-2 control-label">姓名<span style="font-size: 15px; color: red;">*</span></label>
 							<div class="col-sm-10" style="width: 300px;">
-								<input type="text" class="form-control" id="create-surname">
+								<input type="text" class="form-control" id="create-fullname">
 							</div>
 						</div>
 						
@@ -104,15 +280,11 @@ String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.
 							</div>
 							<label for="create-status" class="col-sm-2 control-label">线索状态</label>
 							<div class="col-sm-10" style="width: 300px;">
-								<select class="form-control" id="create-status">
-								  <option></option>
-								  <option>试图联系</option>
-								  <option>将来联系</option>
-								  <option>已联系</option>
-								  <option>虚假线索</option>
-								  <option>丢失线索</option>
-								  <option>未联系</option>
-								  <option>需要条件</option>
+								<select class="form-control" id="create-state">
+									<option></option>
+								  <c:forEach items="${applicationScope.clueState}" var="a">
+									  <option value="${a.value}">${a.text}</option>
+								  </c:forEach>
 								</select>
 							</div>
 						</div>
@@ -121,21 +293,10 @@ String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.
 							<label for="create-source" class="col-sm-2 control-label">线索来源</label>
 							<div class="col-sm-10" style="width: 300px;">
 								<select class="form-control" id="create-source">
-								  <option></option>
-								  <option>广告</option>
-								  <option>推销电话</option>
-								  <option>员工介绍</option>
-								  <option>外部介绍</option>
-								  <option>在线商场</option>
-								  <option>合作伙伴</option>
-								  <option>公开媒介</option>
-								  <option>销售邮件</option>
-								  <option>合作伙伴研讨会</option>
-								  <option>内部研讨会</option>
-								  <option>交易会</option>
-								  <option>web下载</option>
-								  <option>web调研</option>
-								  <option>聊天</option>
+									<option></option>
+									<c:forEach items="${applicationScope.source}" var="a">
+										<option value="${a.value}">${a.text}</option>
+									</c:forEach>
 								</select>
 							</div>
 						</div>
@@ -144,7 +305,7 @@ String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.
 						<div class="form-group">
 							<label for="create-describe" class="col-sm-2 control-label">线索描述</label>
 							<div class="col-sm-10" style="width: 81%;">
-								<textarea class="form-control" rows="3" id="create-describe"></textarea>
+								<textarea class="form-control" rows="3" id="create-description"></textarea>
 							</div>
 						</div>
 						
@@ -158,9 +319,9 @@ String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.
 								</div>
 							</div>
 							<div class="form-group">
-								<label for="create-nextContactTime" class="col-sm-2 control-label">下次联系时间</label>
+								<label for="create-nextContactTime" class="col-sm-2 control-label ">下次联系时间</label>
 								<div class="col-sm-10" style="width: 300px;">
-									<input type="text" class="form-control" id="create-nextContactTime">
+									<input type="text" class="form-control time" id="create-nextContactTime">
 								</div>
 							</div>
 						</div>
@@ -180,7 +341,7 @@ String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.
 				</div>
 				<div class="modal-footer">
 					<button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
-					<button type="button" class="btn btn-primary" data-dismiss="modal">保存</button>
+					<button type="button" class="btn btn-primary" id="saveBtn">保存</button>
 				</div>
 			</div>
 		</div>
@@ -363,43 +524,32 @@ String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.
 				  <div class="form-group">
 				    <div class="input-group">
 				      <div class="input-group-addon">名称</div>
-				      <input class="form-control" type="text">
+				      <input class="form-control" type="text" id="search-fullname">
 				    </div>
 				  </div>
 				  
 				  <div class="form-group">
 				    <div class="input-group">
 				      <div class="input-group-addon">公司</div>
-				      <input class="form-control" type="text">
+				      <input class="form-control" type="text" id="search-company">
 				    </div>
 				  </div>
 				  
 				  <div class="form-group">
 				    <div class="input-group">
 				      <div class="input-group-addon">公司座机</div>
-				      <input class="form-control" type="text">
+				      <input class="form-control" type="text" id="search-phone">
 				    </div>
 				  </div>
 				  
 				  <div class="form-group">
 				    <div class="input-group">
 				      <div class="input-group-addon">线索来源</div>
-					  <select class="form-control">
+					  <select class="form-control" id="search-source">
 					  	  <option></option>
-					  	  <option>广告</option>
-						  <option>推销电话</option>
-						  <option>员工介绍</option>
-						  <option>外部介绍</option>
-						  <option>在线商场</option>
-						  <option>合作伙伴</option>
-						  <option>公开媒介</option>
-						  <option>销售邮件</option>
-						  <option>合作伙伴研讨会</option>
-						  <option>内部研讨会</option>
-						  <option>交易会</option>
-						  <option>web下载</option>
-						  <option>web调研</option>
-						  <option>聊天</option>
+						  <c:forEach items="${applicationScope.source}" var="a">
+							  <option value="${a.value}">${a.text}</option>
+						  </c:forEach>
 					  </select>
 				    </div>
 				  </div>
@@ -409,42 +559,37 @@ String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.
 				  <div class="form-group">
 				    <div class="input-group">
 				      <div class="input-group-addon">所有者</div>
-				      <input class="form-control" type="text">
+				      <input class="form-control" type="text" id="search-owner">
 				    </div>
 				  </div>
 				  
-				  
-				  
+
 				  <div class="form-group">
 				    <div class="input-group">
 				      <div class="input-group-addon">手机</div>
-				      <input class="form-control" type="text">
+				      <input class="form-control" type="text" id="search-mphone">
 				    </div>
 				  </div>
 				  
 				  <div class="form-group">
 				    <div class="input-group">
 				      <div class="input-group-addon">线索状态</div>
-					  <select class="form-control">
+					  <select class="form-control" id="search-state">
 					  	<option></option>
-					  	<option>试图联系</option>
-					  	<option>将来联系</option>
-					  	<option>已联系</option>
-					  	<option>虚假线索</option>
-					  	<option>丢失线索</option>
-					  	<option>未联系</option>
-					  	<option>需要条件</option>
+						  <c:forEach items="${applicationScope.clueState}" var="a">
+							  <option value="${a.value}">${a.text}</option>
+						  </c:forEach>
 					  </select>
 				    </div>
 				  </div>
 
-				  <button type="submit" class="btn btn-default">查询</button>
+				  <button type="button" class="btn btn-default" id="searchBtn">查询</button>
 				  
 				</form>
 			</div>
 			<div class="btn-toolbar" role="toolbar" style="background-color: #F7F7F7; height: 50px; position: relative;top: 40px;">
 				<div class="btn-group" style="position: relative; top: 18%;">
-				  <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#createClueModal"><span class="glyphicon glyphicon-plus"></span> 创建</button>
+				  <button type="button" class="btn btn-primary" id="addBtn" ><span class="glyphicon glyphicon-plus"></span> 创建</button>
 				  <button type="button" class="btn btn-default" data-toggle="modal" data-target="#editClueModal"><span class="glyphicon glyphicon-pencil"></span> 修改</button>
 				  <button type="button" class="btn btn-danger"><span class="glyphicon glyphicon-minus"></span> 删除</button>
 				</div>
@@ -455,7 +600,7 @@ String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.
 				<table class="table table-hover">
 					<thead>
 						<tr style="color: #B3B3B3;">
-							<td><input type="checkbox" /></td>
+							<td><input type="checkbox" id="qx"/></td>
 							<td>名称</td>
 							<td>公司</td>
 							<td>公司座机</td>
@@ -465,8 +610,8 @@ String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.
 							<td>线索状态</td>
 						</tr>
 					</thead>
-					<tbody>
-						<tr>
+					<tbody id="clueBody">
+						<%--<tr>
 							<td><input type="checkbox" /></td>
 							<td><a style="text-decoration: none; cursor: pointer;" onclick="window.location.href='workbench/clue/detail.jsp';">李四先生</a></td>
 							<td>动力节点</td>
@@ -485,13 +630,14 @@ String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.
                             <td>广告</td>
                             <td>zhangsan</td>
                             <td>已联系</td>
-                        </tr>
+                        </tr>--%>
 					</tbody>
 				</table>
 			</div>
-			
+
 			<div style="height: 50px; position: relative;top: 60px;">
-				<div>
+				<div id="activityPage"></div>
+				<%--<div>
 					<button type="button" class="btn btn-default" style="cursor: default;">共<b>50</b>条记录</button>
 				</div>
 				<div class="btn-group" style="position: relative;top: -34px; left: 110px;">
@@ -520,7 +666,7 @@ String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.
 							<li><a href="#">5</a></li>
 							<li><a href="#">下一页</a></li>
 							<li class="disabled"><a href="#">末页</a></li>
-						</ul>
+						</ul>--%>
 					</nav>
 				</div>
 			</div>

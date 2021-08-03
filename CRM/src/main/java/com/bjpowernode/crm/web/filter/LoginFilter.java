@@ -20,10 +20,10 @@ public class LoginFilter implements Filter {
 
         //不应被拦截的请求直接放行
         if("/login.jsp".equals(path) || "/settings/user/login.do".equals(path)){
-            System.out.println("放行");
+
             chain.doFilter(req,resp);
         } else {
-            System.out.println("不放行");
+
             //其他页面都要验证
             //user不为空说明登录过
             HttpSession session = request.getSession();

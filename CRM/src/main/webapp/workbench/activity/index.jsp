@@ -313,12 +313,14 @@ String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.
 			$("input[name=xz]").prop("checked",this.checked)
 
 		})
+
 		/*
 			动态生成的元素，我们不能以普通的绑定事件形式来进行操作
 				只能用on方式的形式来触发事件
 
 				$(需要绑定元素的有效的外层元素).on(绑定事件的方式，需要绑定的元素的jquery对象，回调函数)
 		*/
+
 		//全选复选框问题
 		$("#activityBody").on("click",$("input[name=xz]"), function () {
 			if($("input[name=xz]").length == $("input[name=xz]:checked").length){
@@ -327,7 +329,6 @@ String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.
 			}else {
 				$("#qx").prop("checked",false)
 			}
-
 
 		})
 

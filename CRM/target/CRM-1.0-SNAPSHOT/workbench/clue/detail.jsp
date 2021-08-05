@@ -19,6 +19,61 @@ String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.
 	var cancelAndSaveBtnDefault = true;
 	
 	$(function(){
+
+		//为关联按钮绑定事件
+		$("#bundBtn").click(function () {
+
+			var $xz = $("input[name=xz]:checked")
+
+			if($xz.length ==0){
+				alert("请选着需要关联的市场活动");
+			}else {
+				//    workbench/clue/bund.do
+				var param ="cid=${requestScope.clue.id}&";
+				for(var i=0; i<$xz.length; i++){
+
+					param+='aid='+$xz[i].value;
+					if(i<$xz.length-1){
+						param+="&"
+					}
+				}
+
+				$.ajax({
+					url:"workbench/clue/bund.do",
+					data:param,
+					type:"post",
+					dataType:"json",
+					success:function (data) {
+						//data  "success":boolean
+						if(data.success){
+							//刷新市场活动列表
+							showActivityList();
+							//清空搜索、全选去除、清空activitySearchBody中内容
+							$("#activitySearchBody").html("");
+							searchActivity();
+							//关闭模态窗口
+							$("#bundModal").modal(hide);
+
+						}else{
+							alert("关联市场活动失败")
+						}
+					}
+				})
+
+			}
+
+		})
+
+		//为关联市场活动模态窗口中的搜索绑定事件，用过触发回车查询市场活动列表
+		$("#aName").keydown(function (e) {
+			if(e.keyCode == 13){
+				searchActivity()
+
+				//将模态窗口默认的回车行为终止掉
+				return false;
+			}
+		})
+
 		$("#remark").focus(function(){
 			if(cancelAndSaveBtnDefault){
 				//设置remarkDiv的高度为130px
@@ -54,6 +109,8 @@ String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.
 		});
 
 		showClueRemarkList();
+
+		showActivityList();
 	});
 
 	//clueRemark展示
@@ -91,6 +148,91 @@ String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.
 			}
 		})
 	}
+
+	//activityList展示
+	function showActivityList() {
+
+
+		$.ajax({
+			url:"workbench/clue/getActivityListByClueId.do",
+			data:{
+				"clueId":"${requestScope.clue.id}"
+			},
+			type:"get",
+			dataType:"json",
+			success:function (data) {
+				//data  [{市场活动},{},{}]
+
+				var html ="";
+				$.each(data,function (i,n) {
+					html+= '<tr>';
+					html+= '<td>'+n.name+'</td>';
+					html+= '<td>'+n.startDate+'</td>';
+					html+= '<td>'+n.endDate+'</td>';
+					html+= '<td>'+n.owner+'</td>';
+					html+= '<td><a href="javascript:void(0);" onclick="unbund(\''+n.id+'\')"  style="text-decoration: none;"><span class="glyphicon glyphicon-remove"></span>解除关联</a></td>';
+					html+= '</tr>';
+				});
+
+
+				$("#activityBody").html(html);
+			}
+		})
+
+	}
+
+	//id:关联关系表的id
+	function unbund(id) {
+		$.ajax({
+			url:"workbench/clue/unbund.do",
+			data:{
+				"id":id
+			},
+			type:"post",
+			dataType:"json",
+			success:function (data) {
+				//data:{"success":boolean}
+				if(data.success){
+					alert("解除关联成功")
+					//刷新
+					showActivityList()
+				}else {
+					alert("解除关联失败")
+				}
+			}
+		})
+	}
+
+	function searchActivity() {
+		//查询可用的市场活动列表
+		$.ajax({
+			url:"workbench/clue/getActivityListByNameAndNotByClueId.do",
+			data:{
+				"aName":$.trim($("#aName").val()),
+				"clueId":"${requestScope.clue.id}"
+			},
+			type:"get",
+			dataType:"json",
+			success:function (data) {
+
+				//data: "aList":[{activity},{},{}]
+
+				var html = "";
+
+				$.each(data,function (i,n) {
+					html+= '<tr>';
+					html+= '<td><input  type="checkbox" name="xz" value="'+n.id+'"/></td>';
+					html+= '<td>'+n.name+'</td>';
+					html+= '<td>'+n.startDate+'</td>';
+					html+= '<td>'+n.endDate+'</td>';
+					html+= '<td>'+n.owner+'</td>';
+					html+= '</tr>';
+				});
+
+				$("#activitySearchBody").html(html);
+			}
+		});
+	}
 	
 </script>
 
@@ -111,7 +253,7 @@ String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.
 					<div class="btn-group" style="position: relative; top: 18%; left: 8px;">
 						<form class="form-inline" role="form">
 						  <div class="form-group has-feedback">
-						    <input type="text" class="form-control" style="width: 300px;" placeholder="请输入市场活动名称，支持模糊查询">
+						    <input type="text" class="form-control" id="aName" style="width: 300px;" placeholder="请输入市场活动名称，支持模糊查询">
 						    <span class="glyphicon glyphicon-search form-control-feedback"></span>
 						  </div>
 						</form>
@@ -127,8 +269,8 @@ String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.
 								<td></td>
 							</tr>
 						</thead>
-						<tbody>
-							<tr>
+						<tbody id="activitySearchBody">
+							<%--<tr>
 								<td><input type="checkbox"/></td>
 								<td>发传单</td>
 								<td>2020-10-10</td>
@@ -141,13 +283,13 @@ String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.
 								<td>2020-10-10</td>
 								<td>2020-10-20</td>
 								<td>zhangsan</td>
-							</tr>
+							</tr>--%>
 						</tbody>
 					</table>
 				</div>
 				<div class="modal-footer">
 					<button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
-					<button type="button" class="btn btn-primary" data-dismiss="modal">关联</button>
+					<button type="button" class="btn btn-primary" id="bundBtn">关联</button>
 				</div>
 			</div>
 		</div>
@@ -320,7 +462,7 @@ String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.
 			<h3>${clue.fullname} <small>${clue.company}</small></h3>
 		</div>
 		<div style="position: relative; height: 50px; width: 500px;  top: -72px; left: 700px;">
-			<button type="button" class="btn btn-default" onclick="window.location.href='workbench/clue/convert.jsp';"><span class="glyphicon glyphicon-retweet"></span> 转换</button>
+			<button type="button" class="btn btn-default" onclick="window.location.href='workbench/clue/convert.jsp?id=${clue.id}&fullname=${clue.fullname}&appellation=${clue.appellation}&company=${clue.company}&owner=${clue.owner}';"><span class="glyphicon glyphicon-retweet"></span> 转换</button>
 			<button type="button" class="btn btn-default" data-toggle="modal" data-target="#editClueModal"><span class="glyphicon glyphicon-edit"></span> 编辑</button>
 			<button type="button" class="btn btn-danger"><span class="glyphicon glyphicon-minus"></span> 删除</button>
 		</div>
@@ -477,8 +619,8 @@ String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.
 							<td></td>
 						</tr>
 					</thead>
-					<tbody>
-						<tr>
+					<tbody id="activityBody">
+						<%--<tr>
 							<td>发传单</td>
 							<td>2020-10-10</td>
 							<td>2020-10-20</td>
@@ -491,7 +633,7 @@ String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.
 							<td>2020-10-20</td>
 							<td>zhangsan</td>
 							<td><a href="javascript:void(0);"  style="text-decoration: none;"><span class="glyphicon glyphicon-remove"></span>解除关联</a></td>
-						</tr>
+						</tr>--%>
 					</tbody>
 				</table>
 			</div>

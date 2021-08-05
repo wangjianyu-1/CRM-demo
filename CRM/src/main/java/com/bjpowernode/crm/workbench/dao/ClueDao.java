@@ -12,4 +12,6 @@ public interface ClueDao {
     List<Clue> pageList(Map<String, Object> map);
 
     Clue detail(String id);
+
+    Clue getById(String clueId);
 }

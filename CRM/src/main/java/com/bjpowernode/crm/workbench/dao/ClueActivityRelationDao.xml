@@ -5,6 +5,10 @@
 
 <mapper namespace="com.bjpowernode.crm.workbench.dao.ClueActivityRelationDao">
 
+    <select id="getListByClueId" resultType="ClueActivityRelation">
+        select * from tbl_clue_activity_relation where clueId=#{clueId}
+    </select>
+
     <insert id="bund">
         insert into tbl_clue_activity_relation (id,clueId,activityId) values (#{id},#{clueId},#{activityId})
     </insert>

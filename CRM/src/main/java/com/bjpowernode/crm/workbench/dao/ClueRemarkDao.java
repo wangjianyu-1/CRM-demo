@@ -7,4 +7,8 @@ import java.util.List;
 public interface ClueRemarkDao {
 
     List<ClueRemark> getAllClueRemark(String id);
+
+    List<ClueRemark> getListByClueId(String clueId);
+
+    int delete(ClueRemark clueRemark);
 }

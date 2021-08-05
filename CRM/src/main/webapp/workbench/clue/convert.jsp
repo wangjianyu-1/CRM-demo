@@ -73,14 +73,13 @@ String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.
 
 			//根据复选框有没有选择  判断你是否需要创建交易
 			if( $("#isCreateTransaction").prop("checked") ){
-				//需要创建交易   需要表单数据   利用表单提交
-				//window.location.href="workbench/clue/convert.do?clueId=${param.id}
+
 
 				$("#tranForm").submit();
 
 			}else{
 				//不需要创建交易  只要clueId
-				window.location.href="workbench/clue/convert.do?clueId=${param.id}
+				window.location.href="workbench/clue/convert.do?clueId=${param.id}";
 			}
 
 		})

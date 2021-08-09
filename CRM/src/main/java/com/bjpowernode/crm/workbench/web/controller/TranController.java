@@ -21,6 +21,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 public class TranController extends HttpServlet {
 
@@ -36,7 +37,35 @@ public class TranController extends HttpServlet {
             getCustomerName(request, response);
         }else if ("/workbench/transaction/save.do".equals(path)) {
             save(request, response);
+        }else if ("/workbench/transaction/detail.do".equals(path)) {
+            detail(request, response);
+        }else if ("/workbench/transaction/getTranChart.do".equals(path)) {
+            getTranChart(request, response);
         }
+    }
+
+    private void getTranChart(HttpServletRequest request, HttpServletResponse response) {
+        System.out.println("执行获取tranChart数据的操作");
+
+        TranService ts = (TranService) ServiceFactory.getService(new TranServiceImpl());
+
+        Map<String,Object> map = ts.getTranChart();
+
+        PrintJson.printJsonObj(response,map);
+    }
+
+    private void detail(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException{
+        System.out.println("执行查询交易详细信息操作");
+
+        String id = request.getParameter("id");
+
+        TranService ts = (TranService) ServiceFactory.getService(new TranServiceImpl());
+
+        Tran tran = ts.getById(id);
+
+        request.setAttribute("tran",tran);
+
+        request.getRequestDispatcher("/workbench/transaction/detail.jsp").forward(request,response);
     }
 
     private void save(HttpServletRequest request, HttpServletResponse response) throws IOException {

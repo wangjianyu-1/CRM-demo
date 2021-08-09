@@ -11,6 +11,10 @@ import com.bjpowernode.crm.workbench.domain.Tran;
 import com.bjpowernode.crm.workbench.domain.TranHistory;
 import com.bjpowernode.crm.workbench.service.TranService;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 public class TranServiceImpl implements TranService {
     private TranDao tranDao = SqlSessionUtil.getSqlSession().getMapper(TranDao.class);
     private TranHistoryDao tranHistoryDao = SqlSessionUtil.getSqlSession().getMapper(TranHistoryDao.class);
@@ -66,4 +70,28 @@ public class TranServiceImpl implements TranService {
 
         return flag;
     }
+
+    @Override
+    public Tran getById(String id) {
+
+        Tran tran = tranDao.getById(id);
+
+        return tran;
+    }
+
+    @Override
+    public Map<String, Object> getTranChart() {
+
+        int total = tranDao.getCount();
+
+        List<Map<String,String>> dataList = tranDao.getDataList();
+
+        Map<String,Object> map = new HashMap<>();
+        map.put("total",total);
+        map.put("dataList",dataList);
+
+        return map;
+    }
+
+
 }
